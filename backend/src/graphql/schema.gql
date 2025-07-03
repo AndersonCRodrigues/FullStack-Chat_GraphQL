@@ -1,0 +1,196 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+"""Resultado da autenticação, incluindo tokens e informações do usuário."""
+type AuthOutput {
+  """O token de acesso JWT (curta duração)."""
+  accessToken: String!
+
+  """
+  O refresh token JWT para renovar a sessão. Este campo é removido da resposta HTTP pelo backend por segurança (colocado em um cookie).
+  """
+  refreshToken: String
+
+  """As informações do usuário autenticado."""
+  user: User!
+}
+
+"""Dados de entrada para criar uma nova mensagem de chat."""
+input CreateMessageInput {
+  """O conteúdo da mensagem."""
+  content: String!
+
+  """O ID da sala de chat à qual a mensagem pertence."""
+  roomId: String!
+}
+
+"""Dados de entrada para criar um novo usuário."""
+input CreateUserInput {
+  """O CPF do novo usuário (somente números), único."""
+  cpf: String!
+
+  """O endereço de e-mail do novo usuário. Deve ser único."""
+  email: String!
+
+  """O nome completo do novo usuário."""
+  name: String!
+
+  """A senha do novo usuário (mínimo de 6 caracteres)."""
+  password: String!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+"""Credenciais de login do usuário."""
+input LoginInput {
+  """O endereço de e-mail do usuário."""
+  email: String!
+
+  """A senha do usuário."""
+  password: String!
+}
+
+"""Representa uma mensagem dentro de uma sala de chat."""
+type Message {
+  """O autor da mensagem."""
+  author: User!
+
+  """O conteúdo da mensagem."""
+  content: String!
+
+  """Timestamp de expiração da mensagem."""
+  expiresAt: DateTime!
+  id: ID!
+
+  """O ID da sala de chat."""
+  roomId: String!
+
+  """Timestamp de criação da mensagem."""
+  timestamp: DateTime!
+}
+
+type Mutation {
+  createMessage(createMessageInput: CreateMessageInput!): Message!
+
+  """
+  Cria um novo usuário com nome, e-mail, CPF e senha. Requer autenticação (ex: por um administrador).
+  """
+  createUser(createUserInput: CreateUserInput!): User!
+
+  """
+  Exclui um usuário existente pelo ID. Retorna true em caso de sucesso. Requer autenticação.
+  """
+  deleteUser(
+    """O ID do usuário a ser excluído."""
+    id: ID!
+  ): Boolean!
+
+  """Autentica um usuário e retorna tokens de acesso e refresh."""
+  login(loginInput: LoginInput!): AuthOutput!
+
+  """Invalida o refresh token do usuário atual, efetivando o logout."""
+  logout: Boolean!
+
+  """
+  Gera um novo access token e refresh token usando um refresh token existente.
+  """
+  refreshTokens: AuthOutput!
+
+  """Registra um novo usuário no sistema."""
+  register(registerInput: RegisterInput!): AuthOutput!
+
+  """Atualiza um usuário existente pelo ID. Requer autenticação."""
+  updateUser(
+    """O ID do usuário a ser atualizado."""
+    id: ID!
+
+    """Dados para atualização do usuário."""
+    updateUserInput: UpdateUserInput!
+  ): User!
+}
+
+type Query {
+  getAvailableRooms: [String!]!
+
+  """Retorna o perfil do usuário atualmente autenticado."""
+  getMyProfile: User!
+  messages(roomId: String): [Message!]!
+
+  """Retorna um único usuário pelo ID. Requer autenticação."""
+  user(
+    """O ID do usuário a ser buscado."""
+    id: ID!
+  ): User!
+
+  """
+  Busca um único usuário pelo CPF. Retorna null se não encontrado. Requer autenticação.
+  """
+  userByCpf(
+    """O CPF do usuário a ser buscado."""
+    cpf: String!
+  ): User
+
+  """
+  Busca um único usuário pelo e-mail. Retorna null se não encontrado. Requer autenticação.
+  """
+  userByEmail(
+    """O e-mail do usuário a ser buscado."""
+    email: String!
+  ): User
+
+  """Retorna uma lista de todos os usuários. Requer autenticação."""
+  users: [User!]!
+}
+
+"""Dados de entrada para o registro de um novo usuário."""
+input RegisterInput {
+  """O CPF do novo usuário (somente números), único."""
+  cpf: String!
+
+  """O endereço de e-mail do novo usuário."""
+  email: String!
+
+  """O nome completo do novo usuário."""
+  name: String!
+
+  """A senha do novo usuário (mínimo de 6 caracteres)."""
+  password: String!
+}
+
+type Subscription {
+  messageAdded(roomId: String!): Message!
+}
+
+"""Dados de entrada para atualizar um usuário existente."""
+input UpdateUserInput {
+  """Novo CPF para o usuário (somente números), único."""
+  cpf: String
+
+  """Novo endereço de e-mail para o usuário."""
+  email: String
+
+  """Novo nome completo para o usuário."""
+  name: String
+
+  """Nova senha para o usuário (mínimo de 6 caracteres)."""
+  password: String
+}
+
+"""Representa um usuário do sistema."""
+type User {
+  """O CPF do usuário (somente números), único."""
+  cpf: String!
+
+  """O endereço de e-mail único do usuário."""
+  email: String!
+
+  """O ID único do usuário."""
+  id: ID!
+
+  """O nome completo do usuário."""
+  name: String!
+}
