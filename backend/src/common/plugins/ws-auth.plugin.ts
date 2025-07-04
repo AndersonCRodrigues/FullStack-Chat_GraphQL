@@ -1,4 +1,3 @@
-// backend/src/common/plugins/ws-auth.plugin.ts
 import {
   ApolloServerPlugin,
   BaseContext,
@@ -8,28 +7,13 @@ import { Plugin } from '@nestjs/apollo';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as cookie from 'cookie';
-import { IncomingMessage } from 'http';
-import { AuthService } from '../../auth/auth.service';
 
 import { TokenPayload } from 'src/auth/strategies/jwt.strategy';
-import { User } from '../../user/user.entity';
+import { AuthService } from '../../auth/auth.service';
+
 import { UserService } from '../../user/user.service';
 import { REFRESH_TOKEN_COOKIE_NAME } from '../constants/app.constants';
-
-interface WsRequest extends IncomingMessage {
-  user?: User;
-}
-
-interface GqlWsConnectionContext {
-  connectionParams?: {
-    Authorization?: string;
-    authorization?: string;
-    [key: string]: unknown;
-  };
-  extra?: {
-    request?: WsRequest;
-  };
-}
+import { GqlWsConnectionContext } from '../interfaces/ws-gql.interface';
 
 @Injectable()
 @Plugin()
@@ -51,34 +35,41 @@ export class WebSocketAuthPlugin implements ApolloServerPlugin<BaseContext> {
     );
   }
 
-  async authenticateWebSocketConnection(
-    context: any, // <--- A tipagem 'any' é uma concessão necessária para a integração
-  ): Promise<boolean> {
-    const gqlWsContext = context as GqlWsConnectionContext;
-    const { connectionParams } = gqlWsContext;
-    const request = gqlWsContext.extra?.request; // Acesso seguro com optional chaining
+  public authenticateWebSocketConnection = async (
+    context: GqlWsConnectionContext,
+  ): Promise<boolean> => {
+    const connectionParams = context?.connectionParams;
+    const request = context?.extra?.request;
 
+    if (!request) {
+      this.logger.warn(
+        'Request object is missing from WebSocket context. Cannot authenticate.',
+      );
+      return false;
+    }
+
+    const headers = request.headers || {};
     const refreshTokenName = this.configService.get<string>(
       REFRESH_TOKEN_COOKIE_NAME,
     );
     let token: string | undefined;
 
     const authorizationHeader =
-      connectionParams?.Authorization || connectionParams?.authorization;
+      connectionParams?.Authorization ||
+      connectionParams?.authorization ||
+      headers['authorization'] ||
+      headers['Authorization'];
+
     if (typeof authorizationHeader === 'string') {
       token = authorizationHeader.split(' ')[1];
       if (token) {
-        this.logger.debug(
-          'Token found in connectionParams.Authorization header.',
-        );
+        this.logger.debug('Token found in header.');
       }
     }
 
-    if (!token && request?.headers?.cookie) {
+    if (!token && headers.cookie) {
       try {
-        const cookies: Record<string, string> = cookie.parse(
-          request.headers.cookie,
-        );
+        const cookies: Record<string, string> = cookie.parse(headers.cookie);
         if (refreshTokenName) {
           const tokenFromCookie: string | undefined = cookies[refreshTokenName];
           if (typeof tokenFromCookie === 'string') {
@@ -113,12 +104,9 @@ export class WebSocketAuthPlugin implements ApolloServerPlugin<BaseContext> {
           typeof (decodedPayload as TokenPayload).userId === 'string'
         ) {
           const payload = decodedPayload as TokenPayload;
-
           const user = await this.userService.findById(payload.userId);
           if (user) {
-            if (request) {
-              request.user = user;
-            }
+            request.user = user;
             this.logger.log(
               `WebSocket connection authenticated for user: ${user.email}`,
             );
@@ -138,9 +126,10 @@ export class WebSocketAuthPlugin implements ApolloServerPlugin<BaseContext> {
         return false;
       }
     }
+
     this.logger.warn(
       'WebSocket connection attempt without valid authentication token. Connection rejected.',
     );
     return false;
-  }
+  };
 }
