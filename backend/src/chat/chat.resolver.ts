@@ -10,7 +10,8 @@ import {
 
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { GqlAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { GqlContext } from '../common/interfaces/gql-context.interface';
+import { WsAuthGuard } from 'src/auth/guards/ws-auth.guard';
+import { GqlWsContext } from '../common/interfaces/gql-context.interface';
 import { User } from '../user/user.entity';
 import { ChatService } from './chat.service';
 import { CreateMessageInput } from './dto/create-message.input';
@@ -60,16 +61,17 @@ export class ChatResolver {
       return payload.messageAdded.roomId === variables.roomId;
     },
   })
-  @UseGuards(GqlAuthGuard)
+  @UseGuards(WsAuthGuard)
   messageAdded(
     @Args('roomId', {
       type: () => String,
     })
     roomId: string,
-    @Context() context: GqlContext,
+    @Context() context: GqlWsContext,
   ): AsyncIterator<MessageAddedPayload> {
+    const user = context.req?.extra?.request?.user;
     this.logger.verbose(
-      `Subscription: messageAdded - Room ID: ${roomId}, User: ${context.req.user?.email}`,
+      `Subscription: messageAdded - Room ID: ${roomId}, User: ${user?.email ?? 'unknown'}`,
     );
     return this.chatService.messageAdded(
       roomId,
