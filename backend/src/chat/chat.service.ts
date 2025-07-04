@@ -37,7 +37,7 @@ interface MessageSubscriptionResult {
 
 interface TypedPubSub {
   publish(triggerName: string, payload: unknown): Promise<void>;
-  asyncIterator(triggers: string | string[]): AsyncIterator<unknown>;
+  asyncIterableIterator(triggers: string | string[]): AsyncIterator<unknown>;
 }
 
 @Injectable()
@@ -150,7 +150,7 @@ export class ChatService implements OnModuleInit {
     this.logger.debug(`Criando iterador de subscription para sala "${roomId}"`);
 
     const eventName = `${MESSAGE_ADDED_EVENT_BASE}${roomId}`;
-    return this.pubSub.asyncIterator(
+    return this.pubSub.asyncIterableIterator(
       eventName,
     ) as AsyncIterator<MessageSubscriptionResult>;
   }
