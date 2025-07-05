@@ -1,0 +1,12 @@
+{
+  "name": "chat-compose",
+  "version": "1.0.0",
+  "description": "Scripts para gerenciar docker-compose",
+  "private": true,
+  "scripts": {
+    "compose:up": "docker-compose up --build -d",
+    "compose:down": "docker-compose down",
+    "compose:logs": "docker-compose logs -f",
+    "compose:restart": "npm run compose:down && npm run compose:up"
+  }
+}
